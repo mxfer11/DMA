@@ -24,7 +24,7 @@ h1{font:700 28px/1.2 Georgia,serif;margin:0 0 4px}
 .sym{font-weight:700}.nm{font-size:12px;color:var(--mute)}
 .badge{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid currentColor}
 .buy{color:var(--up);background:color-mix(in srgb,var(--up) 14%,transparent)}
-.near{color:var(--warn)}.above{color:var(--mute)}.below{color:var(--down)}
+.sell{color:var(--down);background:color-mix(in srgb,var(--down) 14%,transparent)}.near{color:var(--warn)}.above{color:var(--mute)}.below{color:var(--down)}
 .px{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:6px}
 .gap{font-size:13px;color:var(--mute)}
 svg{width:100%;display:block}
@@ -40,13 +40,15 @@ svg{width:100%;display:block}
 h3{margin:18px 0 6px;font-size:15px}
 ol{margin:6px 0;padding-left:20px}li{margin-bottom:4px}
 .note{font-size:12px;color:var(--mute);margin-top:14px}
-#status{color:var(--mute)}
+#status{color:var(--mute)}#upd{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:14px}
+.tb{width:100%;border-collapse:collapse;font-size:14px}.tb th{text-align:left;font-weight:500;color:var(--mute);padding:6px 4px;border-bottom:1px solid var(--line)}.tb td{padding:6px 4px;border-bottom:1px solid var(--line)}.pos{color:var(--up);font-weight:600}.neg{color:var(--down);font-weight:600}
 </style>
 </head>
 <body>
 <main>
   <h1>200-day signals</h1>
   <p class="sub">Profitable companies only. A buy signal fires when price crosses back above its 200-day moving average.</p>
+  <div id="upd" hidden></div>
   <div class="bar">
     <button class="pill" id="fWatch" aria-pressed="false">Watchlist only</button>
     <button class="pill" id="fAlert" aria-pressed="false">Alerts off</button>
@@ -61,33 +63,38 @@ const $ = s => document.querySelector(s);
 const store = { get(k,d){ try{ const v=JSON.parse(localStorage.getItem(k)); return v??d; }catch{ return d; } },
                 set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} } };
 let stocks = [], watch = store.get("watch",[]), alertsOn = store.get("alerts",false), onlyWatch = false, sel = null;
-const ORDER = { buy:0, near:1, above:2, below:3 };
-const LABEL = { buy:"Buy signal", near:"At the 200 DMA", above:"Above", below:"Below" };
+const ORDER = { buy:0, sell:1, near:2, above:3, below:4 };
+const LABEL = { buy:"Buy signal", sell:"Sell signal", near:"At the 200 DMA", above:"Above", below:"Below, wait" };
 
 function sma200(c){ const s=Array(c.length).fill(null); let sum=0;
   for(let i=0;i<c.length;i++){ sum+=c[i]; if(i>=200) sum-=c[i-200]; if(i>=199) s[i]=sum/200; } return s; }
 
 function analyze(st){
   const c=st.closes, s=sma200(c), n=c.length-1, gap=c[n]/s[n]-1;
-  let cross=-1; for(let i=n;i>=200;i--){ if(c[i]>=s[i] && c[i-1]<s[i-1]){ cross=i; break; } }
-  const status = (cross>=n-2 && cross>0 && gap>=0) ? "buy" : Math.abs(gap)<=0.02 ? "near" : gap>0 ? "above" : "below";
+  let up=-1, dn=-1;
+  for(let i=n;i>=200;i--){
+    if(up<0 && c[i]>=s[i] && c[i-1]<s[i-1]) up=i;
+    if(dn<0 && c[i]<s[i] && c[i-1]>=s[i-1]) dn=i;
+    if(up>=0 && dn>=0) break; }
+  const status = (up>=n-4 && gap>=0) ? "buy" : (dn>=n-4 && gap<0) ? "sell" : Math.abs(gap)<=0.02 ? "near" : gap>0 ? "above" : "below";
   return { ...st, s, n, gap, status, price:c[n], sma:s[n], bt: backtest(c,s) };
 }
 
 function backtest(c,s){
-  const start=200; let cash=10000, shares=0, buyPx=0; const trades=[], marks=[], eq=[], bh=[];
-  const bhShares=10000/c[start]; let peak=0, dd=0;
-  for(let i=start;i<c.length;i++){
-    const up=c[i]>=s[i], wasUp=c[i-1]>=s[i-1];
-    if(!shares && up && !wasUp){ shares=cash/c[i]; cash=0; buyPx=c[i]; marks.push({i,t:"b"}); }
-    else if(shares && !up && wasUp){ cash=shares*c[i]; trades.push(c[i]/buyPx-1); shares=0; marks.push({i,t:"s"}); }
-    const e=cash+shares*c[i]; eq.push(e); bh.push(bhShares*c[i]);
-    peak=Math.max(peak,e); dd=Math.min(dd,e/peak-1);
-  }
-  if(shares) trades.push(c[c.length-1]/buyPx-1);
-  const wins=trades.filter(x=>x>0).length;
-  return { ret:eq[eq.length-1]/10000-1, bh:bh[bh.length-1]/10000-1, trades:trades.length,
-           win: trades.length? wins/trades.length : null, dd, eq, bhEq:bh, marks, start };
+  const n=c.length-1, HOLD=42, entries=[], trades=[];   // 42 trading days is about 2 months
+  const downs=[];
+  for(let k=200;k<=n;k++){ if(c[k]>=s[k] && c[k-1]<s[k-1]) entries.push(k); if(c[k]<s[k] && c[k-1]>=s[k-1]) downs.push(k); }
+  let free=0;
+  for(const e of entries){ if(e<free) continue;
+    const x=Math.min(e+HOLD,n); trades.push({e,x,r:c[x]/c[e]-1,open:e+HOLD>n}); free=e+HOLD; }
+  const closed=trades.filter(t=>t.r!==undefined && !t.open), rs=closed.map(t=>t.r);
+  const total=rs.reduce((p,r)=>p*(1+r),1)-1;
+  return { entries, trades, closed, signals:entries.length, start:200, HOLD,
+    total, avg:rs.length?rs.reduce((p,r)=>p+r,0)/rs.length:null,
+    win:rs.length?rs.filter(r=>r>0).length/rs.length:null,
+    best:rs.length?Math.max(...rs):null, worst:rs.length?Math.min(...rs):null,
+    inMarket:closed.length*HOLD/(n-200), bh:c[n]/c[200]-1,
+    marks:trades.map(t=>({i:t.e,t:"b"})).concat(downs.map(i=>({i,t:"s"}))) };
 }
 
 function path(vals,w,h,min,max,xOff=0,total=vals.length){
@@ -105,19 +112,13 @@ function chartSvg(a,bars,w,h,marks=false){
     <polyline fill="none" stroke="var(--px)" stroke-width="2" points="${path(c,w,h,min,max)}"/>${m}</svg>`;
 }
 
-function lineSvg(a,b,w,h){
-  const min=Math.min(...a,...b), max=Math.max(...a,...b);
-  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="height:${h}px" role="img" aria-label="Strategy versus buy and hold">
-   <polyline fill="none" stroke="var(--ink)" stroke-opacity=".45" stroke-width="2" points="${path(b,w,h,min,max)}"/>
-   <polyline fill="none" stroke="var(--up)" stroke-width="2.5" points="${path(a,w,h,min,max)}"/></svg>`; }
-
 const pct = (x,d=1)=> (x>=0?"+":"")+(x*100).toFixed(d)+"%";
 
 function render(){
   const list = stocks.filter(s=>!onlyWatch||watch.includes(s.symbol))
     .sort((a,b)=> ORDER[a.status]-ORDER[b.status] || Math.abs(a.gap)-Math.abs(b.gap));
-  const buys = stocks.filter(s=>s.status==="buy").length;
-  $("#status").textContent = `${stocks.length} profitable stocks screened, ${buys} buy signal${buys===1?"":"s"} now`;
+  const buys = stocks.filter(s=>s.status==="buy").length, sells = stocks.filter(s=>s.status==="sell").length;
+  $("#status").textContent = `${stocks.length} profitable stocks: ${buys} buy, ${sells} sell`;
   $("#grid").innerHTML = list.length ? "" : `<p class="sub">${onlyWatch?"Star a stock to add it here.":"No data."}</p>`;
   list.forEach(a=>{
     const d=document.createElement("div");
@@ -141,40 +142,46 @@ function showDetail(a){
   el.innerHTML=`<h2>${a.symbol}, ${a.name||""}</h2>
    <p class="gap">Net income (latest year): $${(a.netIncome/1e9).toFixed(1)}B &middot; Signal: <b class="${a.status}">${LABEL[a.status]}</b></p>
    ${chartSvg(a,500,900,300,true)}
-   <div class="legend"><i style="background:var(--px)"></i>Price<i style="background:var(--sma)"></i>200-day average<i style="background:var(--up)"></i>Buy dot<i style="background:var(--down)"></i>Sell dot</div>
-   <h3>Backtest: buy on cross above the 200 DMA, sell on cross below ($10,000 start, about ${((a.closes.length-b.start)/252).toFixed(1)} years)</h3>
+   <div class="legend"><i style="background:var(--px)"></i>Price<i style="background:var(--sma)"></i>200-day average<i style="background:var(--up)"></i>Past buy signal<i style="background:var(--down)"></i>Past sell signal</div>
+   <h3>Backtest: buy on each cross above the 200 DMA, sell 2 months later (about ${((a.closes.length-b.start)/252).toFixed(1)} years of data)</h3>
    <div class="stats">
-    <div class="stat"><b>${pct(b.ret)}</b><span>Strategy return</span></div>
-    <div class="stat"><b>${pct(b.bh)}</b><span>Buy and hold</span></div>
-    <div class="stat"><b>${b.trades}</b><span>Trades</span></div>
-    <div class="stat"><b>${b.win==null?"n/a":(b.win*100).toFixed(0)+"%"}</b><span>Winning trades</span></div>
-    <div class="stat"><b>${pct(b.dd)}</b><span>Max drawdown</span></div></div>
-   ${lineSvg(b.eq,b.bhEq,900,180)}
-   <div class="legend"><i style="background:var(--up)"></i>Strategy<i style="background:var(--ink);opacity:.45"></i>Buy and hold</div>
+    <div class="stat"><b>${b.closed.length}</b><span>Completed trades${b.trades.length>b.closed.length?" (plus 1 still open)":""}</span></div>
+    <div class="stat"><b>${b.avg==null?"n/a":pct(b.avg)}</b><span>Average trade, ${b.win==null?"n/a":(b.win*100).toFixed(0)+"%"} were up</span></div>
+    <div class="stat"><b>${b.best==null?"n/a":pct(b.best)+" / "+pct(b.worst)}</b><span>Best / worst trade</span></div>
+    <div class="stat"><b>${pct(b.total)}</b><span>Strategy return, in the market ${(b.inMarket*100).toFixed(0)}% of the time</span></div>
+    <div class="stat"><b>${pct(b.bh)}</b><span>Buy and hold, same period</span></div></div>
+   ${b.trades.length?`<table class="tb"><thead><tr><th>Bought</th><th>Sold</th><th>Buy price</th><th>Sell price</th><th>Return</th></tr></thead><tbody>${b.trades.slice(-8).reverse().map(t=>`<tr><td>${a.dates[t.e]}</td><td>${t.open?"Still holding":a.dates[t.x]}</td><td>$${a.closes[t.e].toFixed(2)}</td><td>$${a.closes[t.x].toFixed(2)}${t.open?" (now)":""}</td><td class="${t.r>=0?"pos":"neg"}">${pct(t.r)}</td></tr>`).join("")}</tbody></table>`:`<p class="gap">No buy signals in this period.</p>`}
    <h3>How to act on a buy signal</h3>
    <ol><li>Open a brokerage account you trust and fund it with money you can leave invested.</li>
    <li>Search ${a.symbol}, choose <b>Limit order</b>, and set the price at or just under $${a.price.toFixed(2)}.</li>
    <li>Decide your size first. Many people risk 1 to 2% of their account on one idea.</li>
-   <li>Set your exit before you buy. This strategy sells when price closes back below the 200 DMA (now $${a.sma.toFixed(2)}); a stop near $${stop} is a common guard.</li>
-   <li>Check back daily after the close. Signals use end-of-day prices.</li></ol>
-   <p class="note">Backtest uses daily closing prices, no fees, taxes or slippage, and only today's profitable survivors, which flatters results.</p>`;
+   <li>Decide your exit before you buy. Common exits are a Sell signal here (a close back below the 200 DMA, now $${a.sma.toFixed(2)}) or a stop near $${stop}.</li>
+   <li>Signals update once a week, so check the update date at the top of the page.</li></ol>
+   <p class="note">The test uses daily closing prices, no fees or taxes, and only today's profitable stocks, which flatters results. A handful of signals is a small sample. Data refreshes weekly, so a signal can be up to a week old.</p>`;
   el.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 
 function checkAlerts(){
   if(!alertsOn || !("Notification" in window) || Notification.permission!=="granted") return;
   const seen=store.get("seen",{});
-  stocks.filter(s=>s.status==="buy" && watch.includes(s.symbol)).forEach(s=>{
-    const key=s.dates[s.n]; if(seen[s.symbol]===key) return; seen[s.symbol]=key;
-    new Notification(`${s.symbol}: buy signal`,{body:`Closed $${s.price.toFixed(2)}, back above its 200-day average ($${s.sma.toFixed(2)}).`});
+  stocks.filter(s=>(s.status==="buy"||s.status==="sell") && watch.includes(s.symbol)).forEach(s=>{
+    const key=s.status+s.dates[s.n]; if(seen[s.symbol]===key) return; seen[s.symbol]=key;
+    new Notification(`${s.symbol}: ${LABEL[s.status].toLowerCase()}`,{body:`Closed $${s.price.toFixed(2)} versus its 200-day average of $${s.sma.toFixed(2)}.`});
   }); store.set("seen",seen);
+}
+
+function showUpdate(j){
+  const f=d=>new Date(d).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+  const last=stocks[0].dates[stocks[0].n], nx=new Date(j.next);
+  $("#upd").hidden=false;
+  $("#upd").innerHTML=`Prices through <b>${f(last+"T12:00:00")}</b>. Signals update once a week. ${nx>new Date()?`Next update: <b>${f(nx)}</b>.`:"A new update is due, check back soon."}`;
 }
 
 async function load(){
   try{
     const r=await fetch("/api/data"); const j=await r.json();
     if(!r.ok) throw new Error(j.error||"Request failed");
-    stocks=j.stocks.map(analyze); render(); checkAlerts();
+    stocks=j.stocks.map(analyze); showUpdate(j); render(); checkAlerts();
     if(sel){ const a=stocks.find(s=>s.symbol===sel); if(a) showDetail(a); }
   }catch(e){ $("#status").textContent="Could not load data: "+e.message; }
 }
@@ -185,7 +192,7 @@ $("#fAlert").onclick=async()=>{
   if(!("Notification" in window)) return alert("This browser does not support notifications.");
   if(!alertsOn){ const p=await Notification.requestPermission(); if(p!=="granted") return; }
   alertsOn=!alertsOn; store.set("alerts",alertsOn); syncAlertBtn(); checkAlerts(); };
-syncAlertBtn(); load(); setInterval(load, 30*60*1000);
+syncAlertBtn(); load(); setInterval(load, 6*3600*1000);
 </script>
 </body>
 </html>
