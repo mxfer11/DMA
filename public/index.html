@@ -47,7 +47,7 @@ ol{margin:6px 0;padding-left:20px}li{margin-bottom:4px}
 <body>
 <main>
   <h1>200-day signals</h1>
-  <p class="sub">Profitable companies only. A buy signal fires when price crosses back above its 200-day moving average.</p>
+  <p class="sub">Profitable companies only. Weekly chart with the 200-day average (the 40-week average). A strong buy needs two weekly closes at least 2% above it after a recent dip below, with the average not falling.</p>
   <div id="upd" hidden></div>
   <div class="bar">
     <button class="pill" id="fWatch" aria-pressed="false">Watchlist only</button>
@@ -64,43 +64,68 @@ const store = { get(k,d){ try{ const v=JSON.parse(localStorage.getItem(k)); retu
                 set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} } };
 let stocks = [], watch = store.get("watch",[]), alertsOn = store.get("alerts",false), onlyWatch = false, sel = null;
 const ORDER = { buy:0, sell:1, near:2, above:3, below:4 };
-const LABEL = { buy:"Buy signal", sell:"Sell signal", near:"At the 200 DMA", above:"Above", below:"Below, wait" };
+const LABEL = { buy:"Buy signal", sell:"Sell signal", near:"Near the 200 DMA", above:"Above", below:"Below, wait" };
 
-function sma200(c){ const s=Array(c.length).fill(null); let sum=0;
-  for(let i=0;i<c.length;i++){ sum+=c[i]; if(i>=200) sum-=c[i-200]; if(i>=199) s[i]=sum/200; } return s; }
+const WK=40, BAND=0.02, HOLDW=8;   // 40 weekly closes = about 200 trading days; 2% band; 8-week signal/hold window
 
-function analyze(st){
-  const c=st.closes, s=sma200(c), n=c.length-1, gap=c[n]/s[n]-1;
-  let up=-1, dn=-1;
-  for(let i=n;i>=200;i--){
-    if(up<0 && c[i]>=s[i] && c[i-1]<s[i-1]) up=i;
-    if(dn<0 && c[i]<s[i] && c[i-1]>=s[i-1]) dn=i;
-    if(up>=0 && dn>=0) break; }
-  const status = (up>=n-4 && gap>=0) ? "buy" : (dn>=n-4 && gap<0) ? "sell" : Math.abs(gap)<=0.02 ? "near" : gap>0 ? "above" : "below";
-  return { ...st, s, n, gap, status, price:c[n], sma:s[n], bt: backtest(c,s) };
+function sma(c,L){ const s=Array(c.length).fill(null); let sum=0;
+  for(let i=0;i<c.length;i++){ sum+=c[i]; if(i>=L) sum-=c[i-L]; if(i>=L-1) s[i]=sum/L; } return s; }
+
+function weekly(st){                      // daily closes -> one close per week (the last trading day)
+  const m=new Map();
+  for(let i=0;i<st.dates.length;i++){
+    const d=new Date(st.dates[i]+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()-((d.getUTCDay()||7)-1));
+    m.set(d.toISOString().slice(0,10),{date:st.dates[i],close:st.closes[i]});
+  }
+  let w=[...m.values()];
+  const dow=new Date(w[w.length-1].date+"T00:00:00Z").getUTCDay();
+  if(dow>=1 && dow<=3) w=w.slice(0,-1);   // the last week is not finished yet, so ignore it
+  return { dates:w.map(x=>x.date), closes:w.map(x=>x.close) };
 }
 
-function backtest(c,s){
-  const n=c.length-1, HOLD=42, entries=[], trades=[];   // 42 trading days is about 2 months
-  const downs=[];
-  for(let k=200;k<=n;k++){ if(c[k]>=s[k] && c[k-1]<s[k-1]) entries.push(k); if(c[k]<s[k] && c[k-1]>=s[k-1]) downs.push(k); }
-  let free=0;
-  for(const e of entries){ if(e<free) continue;
-    const x=Math.min(e+HOLD,n); trades.push({e,x,r:c[x]/c[e]-1,open:e+HOLD>n}); free=e+HOLD; }
-  const closed=trades.filter(t=>t.r!==undefined && !t.open), rs=closed.map(t=>t.r);
-  const total=rs.reduce((p,r)=>p*(1+r),1)-1;
-  return { entries, trades, closed, signals:entries.length, start:200, HOLD,
-    total, avg:rs.length?rs.reduce((p,r)=>p+r,0)/rs.length:null,
-    win:rs.length?rs.filter(r=>r>0).length/rs.length:null,
+function analyze(st){
+  const w=weekly(st), c=w.closes, s=sma(c,WK), n=c.length-1;
+  const r=c.map((x,i)=>s[i]==null?null:x/s[i]-1);
+  const bt=backtest(c,s,r), gap=r[n];
+  const status = bt.state!=="none" ? bt.state : Math.abs(gap)<=BAND ? "near" : gap>0 ? "above" : "below";
+  return { ...st, dates:w.dates, closes:c, s, n, gap, status, price:c[n], sma:s[n],
+           since:bt.since, weeksLeft:bt.since>=0?HOLDW-(n-bt.since):0, bt };
+}
+
+function backtest(c,s,r){
+  const n=c.length-1, first=WK-1, events=[]; let state="none", since=-1;
+  // STRONG BUY: two weekly closes in a row at least 2% above the average, the average not falling,
+  // and the price was below the average at some point in the previous 8 weeks (a fresh breakout).
+  const isBuy=t=>{
+    if(t<first+9 || !(r[t]>=BAND && r[t-1]>=BAND) || s[t]<s[t-4]) return false;
+    for(let k=t-9;k<=t-2;k++) if(r[k]<0) return true; return false; };
+  const isSell=t=>{
+    if(t<first+9 || !(r[t]<=-BAND && r[t-1]<=-BAND) || s[t]>s[t-4]) return false;
+    for(let k=t-9;k<=t-2;k++) if(r[k]>0) return true; return false; };
+  for(let t=first+1;t<=n;t++){
+    // an active signal stays on for 8 weekly updates, and only ends early if the price clearly reverses (2% the other way)
+    if(state==="buy" && (r[t]<=-BAND || t-since>=HOLDW)) state="none";
+    if(state==="sell" && (r[t]>=BAND || t-since>=HOLDW)) state="none";
+    if(state==="none"){
+      if(isBuy(t)){ state="buy"; since=t; events.push({i:t,t:"b"}); }
+      else if(isSell(t)){ state="sell"; since=t; events.push({i:t,t:"s"}); }
+    }
+  }
+  const trades=events.filter(e=>e.t==="b").map(e=>{ const x=Math.min(e.i+HOLDW,n);
+    return { e:e.i, x, r:c[x]/c[e.i]-1, open:e.i+HOLDW>n }; });
+  const closed=trades.filter(t=>!t.open), rs=closed.map(t=>t.r);
+  return { events, trades, closed, signals:trades.length, start:first, state, since,
+    total:rs.reduce((p,x)=>p*(1+x),1)-1, avg:rs.length?rs.reduce((p,x)=>p+x,0)/rs.length:null,
+    win:rs.length?rs.filter(x=>x>0).length/rs.length:null,
     best:rs.length?Math.max(...rs):null, worst:rs.length?Math.min(...rs):null,
-    inMarket:closed.length*HOLD/(n-200), bh:c[n]/c[200]-1,
-    marks:trades.map(t=>({i:t.e,t:"b"})).concat(downs.map(i=>({i,t:"s"}))) };
+    inMarket:closed.length*HOLDW/(n-first), bh:c[n]/c[first]-1, marks:events };
 }
 
 function path(vals,w,h,min,max,xOff=0,total=vals.length){
   return vals.map((v,i)=> v==null?"":`${(((i+xOff)/(total-1))*w).toFixed(1)},${(h-((v-min)/(max-min))*h).toFixed(1)}`).filter(Boolean).join(" "); }
 
 function chartSvg(a,bars,w,h,marks=false){
+  bars=Math.min(bars,a.closes.length);
   const from=a.closes.length-bars, c=a.closes.slice(from), s=a.s.slice(from);
   const all=c.concat(s.filter(x=>x!=null)), min=Math.min(...all), max=Math.max(...all);
   let m="";
@@ -126,8 +151,8 @@ function render(){
       <div class="top"><div><div class="sym">${a.symbol}</div><div class="nm">${a.name||""}</div></div>
       <div><button class="star ${watch.includes(a.symbol)?"on":""}" aria-label="Toggle watchlist ${a.symbol}">${watch.includes(a.symbol)?"★":"☆"}</button></div></div>
       <div class="px">$${a.price.toFixed(2)} <span class="badge ${a.status}">${LABEL[a.status]}</span></div>
-      <div class="gap">${pct(a.gap)} vs 200 DMA ($${a.sma.toFixed(2)})</div>
-      ${chartSvg(a,250,260,70)}</div>`;
+      <div class="gap">${pct(a.gap)} vs 200 DMA ($${a.sma.toFixed(2)})${a.since>=0&&(a.status==="buy"||a.status==="sell")?" &middot; since "+a.dates[a.since]:""}</div>
+      ${chartSvg(a,52,260,70)}</div>`;
     const card=d.firstElementChild;
     card.onclick=e=>{ if(e.target.closest(".star")) return; sel=a.symbol; render(); showDetail(a); };
     card.onkeydown=e=>{ if(e.key==="Enter"){ sel=a.symbol; render(); showDetail(a); } };
@@ -140,10 +165,10 @@ function showDetail(a){
   const b=a.bt, el=$("#detail"); el.hidden=false;
   const stop=(a.sma*0.97).toFixed(2);
   el.innerHTML=`<h2>${a.symbol}, ${a.name||""}</h2>
-   <p class="gap">Net income (latest year): $${(a.netIncome/1e9).toFixed(1)}B &middot; Signal: <b class="${a.status}">${LABEL[a.status]}</b></p>
-   ${chartSvg(a,500,900,300,true)}
+   <p class="gap">Net income (latest year): $${(a.netIncome/1e9).toFixed(1)}B &middot; Signal: <b class="${a.status}">${LABEL[a.status]}</b>${(a.status==="buy"||a.status==="sell")?` since ${a.dates[a.since]} (week ${a.n-a.since+1} of ${HOLDW}). It stays on unless a weekly close reverses 2% against it.`:""}</p>
+   ${chartSvg(a,200,900,300,true)}
    <div class="legend"><i style="background:var(--px)"></i>Price<i style="background:var(--sma)"></i>200-day average<i style="background:var(--up)"></i>Past buy signal<i style="background:var(--down)"></i>Past sell signal</div>
-   <h3>Backtest: buy on each cross above the 200 DMA, sell 2 months later (about ${((a.closes.length-b.start)/252).toFixed(1)} years of data)</h3>
+   <h3>Backtest: buy on each strong weekly buy signal, sell 8 weeks later (about ${((a.closes.length-1-b.start)/52).toFixed(1)} years of data)</h3>
    <div class="stats">
     <div class="stat"><b>${b.closed.length}</b><span>Completed trades${b.trades.length>b.closed.length?" (plus 1 still open)":""}</span></div>
     <div class="stat"><b>${b.avg==null?"n/a":pct(b.avg)}</b><span>Average trade, ${b.win==null?"n/a":(b.win*100).toFixed(0)+"%"} were up</span></div>
@@ -155,9 +180,9 @@ function showDetail(a){
    <ol><li>Open a brokerage account you trust and fund it with money you can leave invested.</li>
    <li>Search ${a.symbol}, choose <b>Limit order</b>, and set the price at or just under $${a.price.toFixed(2)}.</li>
    <li>Decide your size first. Many people risk 1 to 2% of their account on one idea.</li>
-   <li>Decide your exit before you buy. Common exits are a Sell signal here (a close back below the 200 DMA, now $${a.sma.toFixed(2)}) or a stop near $${stop}.</li>
-   <li>Signals update once a week, so check the update date at the top of the page.</li></ol>
-   <p class="note">The test uses daily closing prices, no fees or taxes, and only today's profitable stocks, which flatters results. A handful of signals is a small sample. Data refreshes weekly, so a signal can be up to a week old.</p>`;
+   <li>Decide your exit before you buy. The backtest sells 8 weeks after the signal week. Other common exits are a Sell signal here or a stop near $${stop} (3% under the average of $${a.sma.toFixed(2)}).</li>
+   <li>Signals update once a week. A buy signal stays on for up to 8 weekly updates, and drops early only if a weekly close falls 2% below the average.</li></ol>
+   <p class="note">The test uses daily closing prices, no fees or taxes, and only today's profitable stocks, which flatters results. A handful of signals is a small sample. Strong signals are rare, so most stocks show only a few past trades.</p>`;
   el.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 
@@ -174,7 +199,7 @@ function showUpdate(j){
   const f=d=>new Date(d).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
   const last=stocks[0].dates[stocks[0].n], nx=new Date(j.next);
   $("#upd").hidden=false;
-  $("#upd").innerHTML=`Prices through <b>${f(last+"T12:00:00")}</b>. Signals update once a week. ${nx>new Date()?`Next update: <b>${f(nx)}</b>.`:"A new update is due, check back soon."}`;
+  $("#upd").innerHTML=`Weekly closes through <b>${f(last+"T12:00:00")}</b>. Signals update once a week. ${nx>new Date()?`Next update: <b>${f(nx)}</b>.`:"A new update is due, check back soon."}`;
 }
 
 async function load(){
