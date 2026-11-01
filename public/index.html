@@ -205,7 +205,7 @@ function showUpdate(j){
 async function load(){
   try{
     const r=await fetch("/stocks.json"); if(!r.ok) throw new Error("No data saved yet. The first update has not run."); const j=await r.json();
-    stocks=j.stocks.map(analyze); showUpdate(j); render(); checkAlerts();
+       stocks=j.stocks.map(analyze); showUpdate(j); if(j.filters) $("#upd").insertAdjacentHTML("beforeend",`<br><span style="color:var(--mute)">Stock filters: ${j.filters}.</span>`); render(); checkAlerts();
     if(sel){ const a=stocks.find(s=>s.symbol===sel); if(a) showDetail(a); }
   }catch(e){ $("#status").textContent="Could not load data: "+e.message; }
 }
