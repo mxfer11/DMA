@@ -2,221 +2,266 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>200 DMA Signals</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Checklist">
+<meta name="theme-color" content="#0e141a">
+<title>Live Trade Checklist</title>
 <style>
-:root{--bg:#f1f3f6;--card:#fff;--ink:#101a24;--mute:#5f6e7c;--line:#d8dee5;--up:#0b7a5c;--down:#b3261e;--warn:#a15c00;--sma:#e08a00;--px:#1d4ed8}
-@media (prefers-color-scheme:dark){:root{--bg:#0e141a;--card:#17212b;--ink:#e7edf2;--mute:#8d9eac;--line:#283644;--up:#45d2a6;--down:#ff8f84;--warn:#f2b44d;--sma:#f2a93b;--px:#7ea6ff}}
+:root{--bg:#f1f3f6;--card:#fff;--ink:#101a24;--mute:#5f6e7c;--line:#d8dee5;--up:#0b7a5c;--down:#b3261e;--warn:#a15c00;--px:#1d4ed8}
+@media (prefers-color-scheme:dark){:root{--bg:#0e141a;--card:#17212b;--ink:#e7edf2;--mute:#8d9eac;--line:#283644;--up:#45d2a6;--down:#ff8f84;--warn:#f2b44d;--px:#7ea6ff}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,sans-serif}
-main{max-width:1000px;margin:0 auto;padding:28px 18px 64px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif}
+main{max-width:640px;margin:0 auto;padding:24px 16px calc(64px + env(safe-area-inset-bottom))}
 h1{font:700 28px/1.2 Georgia,serif;margin:0 0 4px}
 .sub{color:var(--mute);margin:0 0 18px}
-.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
-.pill{padding:6px 12px;border:1px solid var(--line);border-radius:99px;background:var(--card);color:var(--ink);font:inherit;cursor:pointer}
-.pill[aria-pressed=true]{background:var(--ink);color:var(--bg)}
-.sp{flex:1}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px;cursor:pointer;text-align:left;color:inherit;font:inherit}
-.card:focus-visible,.pill:focus-visible,.star:focus-visible{outline:2px solid var(--px);outline-offset:2px}
-.card.sel{border-color:var(--ink)}
-.top{display:flex;justify-content:space-between;align-items:flex-start}
-.sym{font-weight:700}.nm{font-size:12px;color:var(--mute)}
-.badge{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid currentColor}
-.buy{color:var(--up);background:color-mix(in srgb,var(--up) 14%,transparent)}
-.sell{color:var(--down);background:color-mix(in srgb,var(--down) 14%,transparent)}.near{color:var(--warn)}.above{color:var(--mute)}.below{color:var(--down)}
-.px{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:6px}
-.gap{font-size:13px;color:var(--mute)}
-svg{width:100%;display:block}
-.star{background:none;border:0;font-size:20px;cursor:pointer;color:var(--mute);padding:0 4px}
-.star.on{color:var(--warn)}
-.detail{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px;margin-top:18px}
-.detail h2{margin:0;font:700 22px Georgia,serif}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:14px 0}
-.stat{border:1px solid var(--line);border-radius:4px;padding:8px 10px}
-.stat b{display:block;font-size:18px;font-variant-numeric:tabular-nums}.stat span{font-size:12px;color:var(--mute)}
-.legend{font-size:12px;color:var(--mute);margin:6px 0 14px}
-.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin:0 4px 0 10px}
-h3{margin:18px 0 6px;font-size:15px}
-ol{margin:6px 0;padding-left:20px}li{margin-bottom:4px}
-.note{font-size:12px;color:var(--mute);margin-top:14px}
-#status{color:var(--mute)}#upd{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:14px}
-.tb{width:100%;border-collapse:collapse;font-size:14px}.tb th{text-align:left;font-weight:500;color:var(--mute);padding:6px 4px;border-bottom:1px solid var(--line)}.tb td{padding:6px 4px;border-bottom:1px solid var(--line)}.pos{color:var(--up);font-weight:600}.neg{color:var(--down);font-weight:600}
+.back{display:inline-block;margin-bottom:14px;color:var(--mute);font-size:14px}
+.q{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px;margin-bottom:12px}
+.lab{display:block;font-weight:600;margin-bottom:10px}
+.n{color:var(--mute);font-weight:400;margin-right:8px}
+select,input[type=number],input[type=text],textarea{width:100%;min-height:52px;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit;font-size:17px}
+textarea{min-height:110px;resize:vertical}
+select:focus-visible,input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--px);outline-offset:2px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.choice{position:relative;display:block}
+.choice input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.choice span{display:flex;align-items:center;justify-content:center;min-height:52px;border:1px solid var(--line);border-radius:6px;background:var(--bg);font-weight:600}
+.choice input:checked+span{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.choice.buy input:checked+span{background:var(--up);border-color:var(--up)}
+.choice.sell input:checked+span{background:var(--down);border-color:var(--down)}
+.choice input:focus-visible+span{outline:2px solid var(--px);outline-offset:2px}
+.calc{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.calc div{border:1px solid var(--line);border-radius:4px;padding:8px 10px}
+.calc b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
+.calc span{font-size:12px;color:var(--mute)}
+.w{border-left:4px solid var(--warn);background:color-mix(in srgb,var(--warn) 12%,transparent);border-radius:4px;padding:10px 12px;margin-top:10px;font-size:15px}
+.w.red{border-color:var(--down);background:color-mix(in srgb,var(--down) 12%,transparent)}
+.w.ok{border-color:var(--up);background:color-mix(in srgb,var(--up) 12%,transparent)}
+.w[hidden]{display:none}
+.hint{font-size:13px;color:var(--mute);margin-top:6px}
+.send{width:100%;min-height:58px;border:0;border-radius:6px;background:var(--ink);color:var(--bg);font:700 18px system-ui,sans-serif;cursor:pointer}
+.send:disabled{opacity:.35;cursor:not-allowed}
+#need{color:var(--mute);font-size:14px;margin:8px 2px 0}
 </style>
 </head>
 <body>
 <main>
-  <h1>200-day signals</h1>
-  <p class="sub">Profitable companies only. Weekly chart with the 200-day average (the 40-week average). A strong buy needs two weekly closes at least 2% above it after a recent dip below, with the average not falling.</p>
-  <div id="upd" hidden></div>
-  <div class="bar">
-    <button class="pill" id="fWatch" aria-pressed="false">Watchlist only</button>
-    <button class="pill" id="fAlert" aria-pressed="false">Alerts off</button>
-    <span class="sp"></span><span id="status">Loading...</span>
-  </div>
-  <div class="grid" id="grid"></div>
-  <section class="detail" id="detail" hidden></section>
-  <p class="note">Educational tool, not investment advice. Past performance does not predict future results.</p>
+  <a class="back" href="/">&larr; Back to signals</a>
+  <h1>Live trade checklist</h1>
+  <p class="sub">Fill this in before every entry. A receipt is emailed to you as your record.</p>
+
+  <form id="f" novalidate autocomplete="off">
+    <input type="checkbox" name="botcheck" id="botcheck" tabindex="-1" style="display:none">
+
+    <div class="q">
+      <span class="lab"><span class="n">1</span>Pair and direction</span>
+      <div class="row">
+        <select id="pair" aria-label="Pair">
+          <option value="">Pair...</option><option>XAUUSD</option><option>GBPUSD</option><option>EURUSD</option><option>Other</option>
+        </select>
+        <div class="row" role="radiogroup" aria-label="Direction">
+          <label class="choice buy"><input type="radio" name="dir" value="BUY"><span>BUY</span></label>
+          <label class="choice sell"><input type="radio" name="dir" value="SELL"><span>SELL</span></label>
+        </div>
+      </div>
+      <input type="text" id="other" placeholder="Which pair? e.g. USDJPY" maxlength="12" autocapitalize="characters" style="margin-top:10px" hidden>
+    </div>
+
+    <div class="q">
+      <span class="lab"><span class="n">2</span>Entry, stop loss, take profit</span>
+      <div class="row3">
+        <input id="entry" type="number" step="any" inputmode="decimal" placeholder="Entry" aria-label="Entry price">
+        <input id="sl" type="number" step="any" inputmode="decimal" placeholder="Stop loss" aria-label="Stop loss">
+        <input id="tp" type="number" step="any" inputmode="decimal" placeholder="Take profit" aria-label="Take profit">
+      </div>
+      <div class="calc">
+        <div><b id="risk">-</b><span>Risk</span></div>
+        <div><b id="reward">-</b><span>Reward</span></div>
+        <div><b id="rr">-</b><span>R:R</span></div>
+      </div>
+      <div class="w red" id="wSide" role="alert" hidden></div>
+      <div class="w" id="wRR" hidden></div>
+    </div>
+
+    <div class="q">
+      <label class="lab" for="why"><span class="n">3</span>Why did you enter?</label>
+      <textarea id="why" maxlength="1500" placeholder="Momentum, trend, zone, trigger..."></textarea>
+      <div class="hint" id="cnt"></div>
+    </div>
+
+    <div class="q">
+      <span class="lab"><span class="n">4</span>Is there news tomorrow?</span>
+      <div class="row" role="radiogroup" aria-label="News tomorrow">
+        <label class="choice"><input type="radio" name="news" value="Yes"><span>Yes</span></label>
+        <label class="choice"><input type="radio" name="news" value="No"><span>No</span></label>
+      </div>
+      <div class="w" id="wNews" hidden>Red-folder news is coming. Check the exact release time on the calendar and decide whether this trade should be open around it before you enter.</div>
+    </div>
+
+    <div class="q">
+      <span class="lab"><span class="n">5</span>Have you checked DXY and the macros?</span>
+      <div class="row" role="radiogroup" aria-label="Checked DXY and macros">
+        <label class="choice"><input type="radio" name="macros" value="Yes"><span>Yes</span></label>
+        <label class="choice"><input type="radio" name="macros" value="No"><span>No</span></label>
+      </div>
+      <div class="w red" id="wMacros" role="alert" hidden>Stop. Check DXY and the macros first. The send button stays locked until this is Yes.</div>
+    </div>
+
+    <div class="q">
+      <span class="lab"><span class="n">6</span>Is this your 3rd or higher trade this week?</span>
+      <div class="row" role="radiogroup" aria-label="3rd or higher trade this week">
+        <label class="choice"><input type="radio" name="third" value="Yes"><span>Yes</span></label>
+        <label class="choice"><input type="radio" name="third" value="No"><span>No</span></label>
+      </div>
+      <div class="w" id="wThird" hidden>This is where your revenge and chasing trades come from. You can still send it. The receipt is your record.</div>
+    </div>
+
+    <button class="send" id="send" type="submit" disabled>Send receipt</button>
+    <div id="need" aria-live="polite"></div>
+    <div class="w" id="res" role="status" hidden></div>
+  </form>
 </main>
+
 <script>
-const $ = s => document.querySelector(s);
-const store = { get(k,d){ try{ const v=JSON.parse(localStorage.getItem(k)); return v??d; }catch{ return d; } },
-                set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} } };
-let stocks = [], watch = store.get("watch",[]), alertsOn = store.get("alerts",false), onlyWatch = false, sel = null;
-const ORDER = { buy:0, sell:1, near:2, above:3, below:4 };
-const LABEL = { buy:"Buy signal", sell:"Sell signal", near:"Near the 200 DMA", above:"Above", below:"Below, wait" };
+// ===================== SET THIS ONE VALUE =====================
+const ACCESS_KEY = "PASTE_YOUR_WEB3FORMS_ACCESS_KEY_HERE";
+// ==============================================================
 
-const WK=40, BAND=0.02, HOLDW=8;   // 40 weekly closes = about 200 trading days; 2% band; 8-week signal/hold window
+const ENDPOINT = "https://api.web3forms.com/submit";
+const MIN_WHY = 10, MIN_RR = 1.5;
+const $ = id => document.getElementById(id);
+const val = name => (document.querySelector('input[name="' + name + '"]:checked') || {}).value || "";
+const num = id => { const s = $(id).value.trim(); return s === "" ? NaN : parseFloat(s); };
+const dec = id => { const s = $(id).value.trim(), i = s.indexOf("."); return i < 0 ? 0 : s.length - i - 1; };
+const show = (el, text) => { if (text) { el.textContent = text; el.hidden = false; } else { el.hidden = true; } };
+let sending = false, cur = { risk: NaN, reward: NaN, rr: NaN, d: 2 };
 
-function sma(c,L){ const s=Array(c.length).fill(null); let sum=0;
-  for(let i=0;i<c.length;i++){ sum+=c[i]; if(i>=L) sum-=c[i-L]; if(i>=L-1) s[i]=sum/L; } return s; }
+function evaluate() {
+  const dir = val("dir"), pair = $("pair").value, other = $("other").value.trim();
+  const e = num("entry"), s = num("sl"), t = num("tp");
+  $("other").hidden = pair !== "Other";
 
-function weekly(st){                      // daily closes -> one close per week (the last trading day)
-  const m=new Map();
-  for(let i=0;i<st.dates.length;i++){
-    const d=new Date(st.dates[i]+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()-((d.getUTCDay()||7)-1));
-    m.set(d.toISOString().slice(0,10),{date:st.dates[i],close:st.closes[i]});
+  const d = Math.min(5, Math.max(2, dec("entry"), dec("sl"), dec("tp")));
+  const risk = (!isNaN(e) && !isNaN(s)) ? Math.abs(e - s) : NaN;
+  const reward = (!isNaN(e) && !isNaN(t)) ? Math.abs(t - e) : NaN;
+
+  const msgs = [];
+  if (dir && !isNaN(e) && !isNaN(s)) {
+    if (s === e) msgs.push("Stop loss cannot equal entry.");
+    else if (dir === "BUY" && s > e) msgs.push("BUY: stop loss must be BELOW entry.");
+    else if (dir === "SELL" && s < e) msgs.push("SELL: stop loss must be ABOVE entry.");
   }
-  let w=[...m.values()];
-  const dow=new Date(w[w.length-1].date+"T00:00:00Z").getUTCDay();
-  if(dow>=1 && dow<=3) w=w.slice(0,-1);   // the last week is not finished yet, so ignore it
-  return { dates:w.map(x=>x.date), closes:w.map(x=>x.close) };
+  if (dir && !isNaN(e) && !isNaN(t)) {
+    if (t === e) msgs.push("Take profit cannot equal entry.");
+    else if (dir === "BUY" && t < e) msgs.push("BUY: take profit must be ABOVE entry.");
+    else if (dir === "SELL" && t > e) msgs.push("SELL: take profit must be BELOW entry.");
+  }
+  const sideOK = !!dir && !isNaN(e) && !isNaN(s) && !isNaN(t) && msgs.length === 0;
+  const rr = sideOK ? reward / risk : NaN;
+  cur = { risk, reward, rr, d };
+
+  $("risk").textContent = isNaN(risk) ? "-" : risk.toFixed(d);
+  $("reward").textContent = isNaN(reward) ? "-" : reward.toFixed(d);
+  $("rr").textContent = isNaN(rr) ? "-" : "1:" + rr.toFixed(2);
+  show($("wSide"), msgs.join(" "));
+  show($("wRR"), (sideOK && rr < MIN_RR) ? "R:R is 1:" + rr.toFixed(2) + ", under 1:" + MIN_RR + ". Check the target and stop are realistic before you enter." : "");
+
+  const whyLen = $("why").value.trim().length;
+  $("cnt").textContent = whyLen >= MIN_WHY ? "" : whyLen + "/" + MIN_WHY + " characters minimum";
+  $("wNews").hidden = val("news") !== "Yes";
+  $("wMacros").hidden = val("macros") !== "No";
+  $("wThird").hidden = val("third") !== "Yes";
+
+  const need = [];
+  if (!pair) need.push("pair"); else if (pair === "Other" && other.length < 3) need.push("pair name");
+  if (!dir) need.push("direction");
+  if (isNaN(e)) need.push("entry");
+  if (isNaN(s)) need.push("stop loss");
+  if (isNaN(t)) need.push("take profit");
+  if (msgs.length) need.push("stop and target on the correct side");
+  if (whyLen < MIN_WHY) need.push("why (" + (MIN_WHY - whyLen) + " more characters)");
+  if (!val("news")) need.push("news answer");
+  if (!val("macros")) need.push("DXY and macros answer"); else if (val("macros") !== "Yes") need.push("check DXY and macros, then answer Yes");
+  if (!val("third")) need.push("3rd-trade answer");
+
+  $("send").disabled = sending || need.length > 0;
+  if (!sending) $("need").textContent = need.length ? "To unlock: " + need.join(", ") + "." : "Ready to send.";
 }
 
-function analyze(st){
-  const w=weekly(st), c=w.closes, s=sma(c,WK), n=c.length-1;
-  const r=c.map((x,i)=>s[i]==null?null:x/s[i]-1);
-  const bt=backtest(c,s,r), gap=r[n];
-  const status = bt.state!=="none" ? bt.state : Math.abs(gap)<=BAND ? "near" : gap>0 ? "above" : "below";
-  return { ...st, dates:w.dates, closes:c, s, n, gap, status, price:c[n], sma:s[n],
-           since:bt.since, weeksLeft:bt.since>=0?HOLDW-(n-bt.since):0, bt };
+function result(ok, text) {
+  const r = $("res");
+  r.className = "w " + (ok ? "ok" : "red");
+  r.textContent = text;
+  r.hidden = false;
+  r.scrollIntoView({ block: "center", behavior: "smooth" });
 }
 
-function backtest(c,s,r){
-  const n=c.length-1, first=WK-1, events=[]; let state="none", since=-1;
-  // STRONG BUY: two weekly closes in a row at least 2% above the average, the average not falling,
-  // and the price was below the average at some point in the previous 8 weeks (a fresh breakout).
-  const isBuy=t=>{
-    if(t<first+9 || !(r[t]>=BAND && r[t-1]>=BAND) || s[t]<s[t-4]) return false;
-    for(let k=t-9;k<=t-2;k++) if(r[k]<0) return true; return false; };
-  const isSell=t=>{
-    if(t<first+9 || !(r[t]<=-BAND && r[t-1]<=-BAND) || s[t]>s[t-4]) return false;
-    for(let k=t-9;k<=t-2;k++) if(r[k]>0) return true; return false; };
-  for(let t=first+1;t<=n;t++){
-    // an active signal stays on for 8 weekly updates, and only ends early if the price clearly reverses (2% the other way)
-    if(state==="buy" && (r[t]<=-BAND || t-since>=HOLDW)) state="none";
-    if(state==="sell" && (r[t]>=BAND || t-since>=HOLDW)) state="none";
-    if(state==="none"){
-      if(isBuy(t)){ state="buy"; since=t; events.push({i:t,t:"b"}); }
-      else if(isSell(t)){ state="sell"; since=t; events.push({i:t,t:"s"}); }
+function payload() {
+  const pair = $("pair").value === "Other" ? $("other").value.trim().toUpperCase() : $("pair").value;
+  const dir = val("dir"), e = $("entry").value.trim(), s = $("sl").value.trim(), t = $("tp").value.trim();
+  return {
+    access_key: ACCESS_KEY,
+    subject: "Trade receipt: " + pair + " " + dir + " @ " + e,
+    from_name: "Trade Checklist",
+    "Time": new Date().toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "long" }),
+    "Pair": pair,
+    "Direction": dir,
+    "Entry": e,
+    "Stop loss": s,
+    "Take profit": t,
+    "Risk": cur.risk.toFixed(cur.d),
+    "Reward": cur.reward.toFixed(cur.d),
+    "R:R": "1:" + cur.rr.toFixed(2),
+    "News tomorrow": val("news"),
+    "Checked DXY and macros": val("macros"),
+    "3rd or higher trade this week": val("third"),
+    "Why I entered": $("why").value.trim()
+  };
+}
+
+$("f").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  evaluate();
+  if (sending || $("send").disabled) return;
+  if ($("botcheck").checked) return;                       // honeypot filled: a bot, do nothing
+  if (!ACCESS_KEY || ACCESS_KEY.indexOf("PASTE_") === 0) {
+    result(false, "NOT SENT: the Web3Forms access key is not set. Paste it at the top of the script in checklist.html.");
+    return;
+  }
+  sending = true;
+  $("send").disabled = true; $("send").textContent = "Sending..."; $("need").textContent = "Sending your receipt...";
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 20000);
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(payload()),
+      signal: ctl.signal
+    });
+    let data = null; try { data = await res.json(); } catch (_) {}
+    if (!res.ok || !data || data.success !== true) {
+      throw new Error((data && data.message) || ("The email service replied with HTTP " + res.status + "."));
     }
+    $("f").reset();
+    result(true, "Receipt sent. Check your inbox. The form has been cleared.");
+  } catch (err) {
+    const m = err.name === "AbortError" ? "Timed out after 20 seconds, so it is not confirmed as sent."
+            : err instanceof TypeError ? "No connection to the email service."
+            : err.message;
+    result(false, "NOT SENT: " + m + " Your answers are still here. Try again.");
+  } finally {
+    clearTimeout(timer);
+    sending = false;
+    $("send").textContent = "Send receipt";
+    evaluate();
   }
-  const trades=events.filter(e=>e.t==="b").map(e=>{ const x=Math.min(e.i+HOLDW,n);
-    return { e:e.i, x, r:c[x]/c[e.i]-1, open:e.i+HOLDW>n }; });
-  const closed=trades.filter(t=>!t.open), rs=closed.map(t=>t.r);
-  return { events, trades, closed, signals:trades.length, start:first, state, since,
-    total:rs.reduce((p,x)=>p*(1+x),1)-1, avg:rs.length?rs.reduce((p,x)=>p+x,0)/rs.length:null,
-    win:rs.length?rs.filter(x=>x>0).length/rs.length:null,
-    best:rs.length?Math.max(...rs):null, worst:rs.length?Math.min(...rs):null,
-    inMarket:closed.length*HOLDW/(n-first), bh:c[n]/c[first]-1, marks:events };
-}
+});
 
-function path(vals,w,h,min,max,xOff=0,total=vals.length){
-  return vals.map((v,i)=> v==null?"":`${(((i+xOff)/(total-1))*w).toFixed(1)},${(h-((v-min)/(max-min))*h).toFixed(1)}`).filter(Boolean).join(" "); }
-
-function chartSvg(a,bars,w,h,marks=false){
-  bars=Math.min(bars,a.closes.length);
-  const from=a.closes.length-bars, c=a.closes.slice(from), s=a.s.slice(from);
-  const all=c.concat(s.filter(x=>x!=null)), min=Math.min(...all), max=Math.max(...all);
-  let m="";
-  if(marks) a.bt.marks.forEach(k=>{ const i=k.i-from; if(i<0) return;
-    const x=(i/(bars-1))*w, y=h-((a.closes[k.i]-min)/(max-min))*h;
-    m+=`<circle cx="${x}" cy="${y}" r="5" fill="${k.t==="b"?"var(--up)":"var(--down)"}"><title>${k.t==="b"?"Buy":"Sell"} ${a.dates[k.i]}</title></circle>`; });
-  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="height:${h}px" role="img" aria-label="${a.symbol} price versus 200-day average">
-    <polyline fill="none" stroke="var(--sma)" stroke-width="2" points="${path(s,w,h,min,max)}"/>
-    <polyline fill="none" stroke="var(--px)" stroke-width="2" points="${path(c,w,h,min,max)}"/>${m}</svg>`;
-}
-
-const pct = (x,d=1)=> (x>=0?"+":"")+(x*100).toFixed(d)+"%";
-
-function render(){
-  const list = stocks.filter(s=>!onlyWatch||watch.includes(s.symbol))
-    .sort((a,b)=> ORDER[a.status]-ORDER[b.status] || Math.abs(a.gap)-Math.abs(b.gap));
-  const buys = stocks.filter(s=>s.status==="buy").length, sells = stocks.filter(s=>s.status==="sell").length;
-  $("#status").textContent = `${stocks.length} profitable stocks: ${buys} buy, ${sells} sell`;
-  $("#grid").innerHTML = list.length ? "" : `<p class="sub">${onlyWatch?"Star a stock to add it here.":"No data."}</p>`;
-  list.forEach(a=>{
-    const d=document.createElement("div");
-    d.innerHTML=`<div class="card ${sel===a.symbol?"sel":""}" tabindex="0" role="button">
-      <div class="top"><div><div class="sym">${a.symbol}</div><div class="nm">${a.name||""}</div></div>
-      <div><button class="star ${watch.includes(a.symbol)?"on":""}" aria-label="Toggle watchlist ${a.symbol}">${watch.includes(a.symbol)?"★":"☆"}</button></div></div>
-      <div class="px">$${a.price.toFixed(2)} <span class="badge ${a.status}">${LABEL[a.status]}</span></div>
-      <div class="gap">${pct(a.gap)} vs 200 DMA ($${a.sma.toFixed(2)})${a.since>=0&&(a.status==="buy"||a.status==="sell")?" &middot; since "+a.dates[a.since]:""}</div>
-      ${chartSvg(a,52,260,70)}</div>`;
-    const card=d.firstElementChild;
-    card.onclick=e=>{ if(e.target.closest(".star")) return; sel=a.symbol; render(); showDetail(a); };
-    card.onkeydown=e=>{ if(e.key==="Enter"){ sel=a.symbol; render(); showDetail(a); } };
-    card.querySelector(".star").onclick=()=>{ watch=watch.includes(a.symbol)?watch.filter(x=>x!==a.symbol):[...watch,a.symbol]; store.set("watch",watch); render(); };
-    $("#grid").appendChild(card);
-  });
-}
-
-function showDetail(a){
-  const b=a.bt, el=$("#detail"); el.hidden=false;
-  const stop=(a.sma*0.97).toFixed(2);
-  el.innerHTML=`<h2>${a.symbol}, ${a.name||""}</h2>
-   <p class="gap">Net income (latest year): $${(a.netIncome/1e9).toFixed(1)}B &middot; Signal: <b class="${a.status}">${LABEL[a.status]}</b>${(a.status==="buy"||a.status==="sell")?` since ${a.dates[a.since]} (week ${a.n-a.since+1} of ${HOLDW}). It stays on unless a weekly close reverses 2% against it.`:""}</p>
-   ${chartSvg(a,200,900,300,true)}
-   <div class="legend"><i style="background:var(--px)"></i>Price<i style="background:var(--sma)"></i>200-day average<i style="background:var(--up)"></i>Past buy signal<i style="background:var(--down)"></i>Past sell signal</div>
-   <h3>Backtest: buy on each strong weekly buy signal, sell 8 weeks later (about ${((a.closes.length-1-b.start)/52).toFixed(1)} years of data)</h3>
-   <div class="stats">
-    <div class="stat"><b>${b.closed.length}</b><span>Completed trades${b.trades.length>b.closed.length?" (plus 1 still open)":""}</span></div>
-    <div class="stat"><b>${b.avg==null?"n/a":pct(b.avg)}</b><span>Average trade, ${b.win==null?"n/a":(b.win*100).toFixed(0)+"%"} were up</span></div>
-    <div class="stat"><b>${b.best==null?"n/a":pct(b.best)+" / "+pct(b.worst)}</b><span>Best / worst trade</span></div>
-    <div class="stat"><b>${pct(b.total)}</b><span>Strategy return, in the market ${(b.inMarket*100).toFixed(0)}% of the time</span></div>
-    <div class="stat"><b>${pct(b.bh)}</b><span>Buy and hold, same period</span></div></div>
-   ${b.trades.length?`<table class="tb"><thead><tr><th>Bought</th><th>Sold</th><th>Buy price</th><th>Sell price</th><th>Return</th></tr></thead><tbody>${b.trades.slice(-8).reverse().map(t=>`<tr><td>${a.dates[t.e]}</td><td>${t.open?"Still holding":a.dates[t.x]}</td><td>$${a.closes[t.e].toFixed(2)}</td><td>$${a.closes[t.x].toFixed(2)}${t.open?" (now)":""}</td><td class="${t.r>=0?"pos":"neg"}">${pct(t.r)}</td></tr>`).join("")}</tbody></table>`:`<p class="gap">No buy signals in this period.</p>`}
-   <h3>How to act on a buy signal</h3>
-   <ol><li>Open a brokerage account you trust and fund it with money you can leave invested.</li>
-   <li>Search ${a.symbol}, choose <b>Limit order</b>, and set the price at or just under $${a.price.toFixed(2)}.</li>
-   <li>Decide your size first. Many people risk 1 to 2% of their account on one idea.</li>
-   <li>Decide your exit before you buy. The backtest sells 8 weeks after the signal week. Other common exits are a Sell signal here or a stop near $${stop} (3% under the average of $${a.sma.toFixed(2)}).</li>
-   <li>Signals update once a week. A buy signal stays on for up to 8 weekly updates, and drops early only if a weekly close falls 2% below the average.</li></ol>
-   <p class="note">The test uses daily closing prices, no fees or taxes, and only today's profitable stocks, which flatters results. A handful of signals is a small sample. Strong signals are rare, so most stocks show only a few past trades.</p>`;
-  el.scrollIntoView({behavior:"smooth",block:"nearest"});
-}
-
-function checkAlerts(){
-  if(!alertsOn || !("Notification" in window) || Notification.permission!=="granted") return;
-  const seen=store.get("seen",{});
-  stocks.filter(s=>(s.status==="buy"||s.status==="sell") && watch.includes(s.symbol)).forEach(s=>{
-    const key=s.status+s.dates[s.n]; if(seen[s.symbol]===key) return; seen[s.symbol]=key;
-    new Notification(`${s.symbol}: ${LABEL[s.status].toLowerCase()}`,{body:`Closed $${s.price.toFixed(2)} versus its 200-day average of $${s.sma.toFixed(2)}.`});
-  }); store.set("seen",seen);
-}
-
-function showUpdate(j){
-  const f=d=>new Date(d).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
-  const last=stocks[0].dates[stocks[0].n], nx=new Date(j.next);
-  $("#upd").hidden=false;
-  $("#upd").innerHTML=`Weekly closes through <b>${f(last+"T12:00:00")}</b>. Signals update once a week. ${nx>new Date()?`Next update: <b>${f(nx)}</b>.`:"A new update is due, check back soon."}`;
-}
-
-async function load(){
-  try{
-    const r=await fetch("/stocks.json"); if(!r.ok) throw new Error("No data saved yet. The first update has not run."); const j=await r.json();
-       stocks=j.stocks.map(analyze); showUpdate(j); if(j.filters) $("#upd").insertAdjacentHTML("beforeend",`<br><span style="color:var(--mute)">Stock filters: ${j.filters}.</span>`); render(); checkAlerts();
-    if(sel){ const a=stocks.find(s=>s.symbol===sel); if(a) showDetail(a); }
-  }catch(e){ $("#status").textContent="Could not load data: "+e.message; }
-}
-
-function syncAlertBtn(){ const b=$("#fAlert"); b.textContent=alertsOn?"Alerts on":"Alerts off"; b.setAttribute("aria-pressed",alertsOn); }
-$("#fWatch").onclick=e=>{ onlyWatch=!onlyWatch; e.target.setAttribute("aria-pressed",onlyWatch); render(); };
-$("#fAlert").onclick=async()=>{
-  if(!("Notification" in window)) return alert("This browser does not support notifications.");
-  if(!alertsOn){ const p=await Notification.requestPermission(); if(p!=="granted") return; }
-  alertsOn=!alertsOn; store.set("alerts",alertsOn); syncAlertBtn(); checkAlerts(); };
-syncAlertBtn(); load(); setInterval(load, 6*3600*1000);
+["input", "change"].forEach(type => $("f").addEventListener(type, () => { if (!sending) $("res").hidden = true; evaluate(); }));
+evaluate();
 </script>
 </body>
 </html>
