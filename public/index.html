@@ -21,11 +21,14 @@ h1{font:700 28px/1.2 Georgia,serif;margin:0 0 4px}
 .q{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px;margin-bottom:12px}
 .lab{display:block;font-weight:600;margin-bottom:10px}
 .n{color:var(--mute);font-weight:400;margin-right:8px}
-select,input[type=number],input[type=text],textarea{width:100%;min-height:52px;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit;font-size:17px}
+select,input[type=number],input[type=text],input[type=url],textarea{width:100%;min-height:52px;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit;font-size:17px}
 textarea{min-height:110px;resize:vertical}
 select:focus-visible,input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--px);outline-offset:2px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.row4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stack input{margin-bottom:8px}
+.stack input:last-child{margin-bottom:0}
 .choice{position:relative;display:block}
 .choice input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
 .choice span{display:flex;align-items:center;justify-content:center;min-height:52px;border:1px solid var(--line);border-radius:6px;background:var(--bg);font-weight:600}
@@ -51,7 +54,7 @@ select:focus-visible,input:focus-visible,textarea:focus-visible,button:focus-vis
 <main>
   <a class="back" href="/">&larr; Back to signals</a>
   <h1>Live trade checklist</h1>
-  <p class="sub">Fill this in before every entry. A receipt is emailed to you as your record.</p>
+  <p class="sub">Fill this in before every entry. It is logged to your journal and a receipt is emailed to you as your record.</p>
 
   <form id="f" novalidate autocomplete="off">
     <input type="checkbox" name="botcheck" id="botcheck" tabindex="-1" style="display:none">
@@ -87,13 +90,38 @@ select:focus-visible,input:focus-visible,textarea:focus-visible,button:focus-vis
     </div>
 
     <div class="q">
-      <label class="lab" for="why"><span class="n">3</span>Why did you enter?</label>
+      <span class="lab"><span class="n">3</span>Your 3 confluences</span>
+      <div class="stack">
+        <input type="text" id="c1" maxlength="200" placeholder="Confluence 1" aria-label="Confluence 1">
+        <input type="text" id="c2" maxlength="200" placeholder="Confluence 2" aria-label="Confluence 2">
+        <input type="text" id="c3" maxlength="200" placeholder="Confluence 3" aria-label="Confluence 3">
+      </div>
+    </div>
+
+    <div class="q">
+      <span class="lab"><span class="n">4</span>Trade tier</span>
+      <div class="row4" role="radiogroup" aria-label="Trade tier">
+        <label class="choice"><input type="radio" name="tier" value="A+"><span>A+</span></label>
+        <label class="choice"><input type="radio" name="tier" value="A"><span>A</span></label>
+        <label class="choice"><input type="radio" name="tier" value="B"><span>B</span></label>
+        <label class="choice"><input type="radio" name="tier" value="C"><span>C</span></label>
+      </div>
+    </div>
+
+    <div class="q">
+      <label class="lab" for="shot"><span class="n">5</span>TradingView screenshot link</label>
+      <input type="url" id="shot" inputmode="url" autocapitalize="none" placeholder="https://www.tradingview.com/x/..." aria-label="TradingView screenshot link">
+      <div class="hint">On TradingView: Ctrl+Alt+S (or the camera icon) to copy the snapshot link.</div>
+    </div>
+
+    <div class="q">
+      <label class="lab" for="why"><span class="n">6</span>Why did you enter? (notes)</label>
       <textarea id="why" maxlength="1500" placeholder="Momentum, trend, zone, trigger..."></textarea>
       <div class="hint" id="cnt"></div>
     </div>
 
     <div class="q">
-      <span class="lab"><span class="n">4</span>Is there news tomorrow?</span>
+      <span class="lab"><span class="n">7</span>Is there news tomorrow?</span>
       <div class="row" role="radiogroup" aria-label="News tomorrow">
         <label class="choice"><input type="radio" name="news" value="Yes"><span>Yes</span></label>
         <label class="choice"><input type="radio" name="news" value="No"><span>No</span></label>
@@ -102,7 +130,7 @@ select:focus-visible,input:focus-visible,textarea:focus-visible,button:focus-vis
     </div>
 
     <div class="q">
-      <span class="lab"><span class="n">5</span>Have you checked DXY and the macros?</span>
+      <span class="lab"><span class="n">8</span>Have you checked DXY and the macros?</span>
       <div class="row" role="radiogroup" aria-label="Checked DXY and macros">
         <label class="choice"><input type="radio" name="macros" value="Yes"><span>Yes</span></label>
         <label class="choice"><input type="radio" name="macros" value="No"><span>No</span></label>
@@ -111,7 +139,7 @@ select:focus-visible,input:focus-visible,textarea:focus-visible,button:focus-vis
     </div>
 
     <div class="q">
-      <span class="lab"><span class="n">6</span>Is this your 3rd or higher trade this week?</span>
+      <span class="lab"><span class="n">9</span>Is this your 3rd or higher trade this week?</span>
       <div class="row" role="radiogroup" aria-label="3rd or higher trade this week">
         <label class="choice"><input type="radio" name="third" value="Yes"><span>Yes</span></label>
         <label class="choice"><input type="radio" name="third" value="No"><span>No</span></label>
@@ -126,17 +154,18 @@ select:focus-visible,input:focus-visible,textarea:focus-visible,button:focus-vis
 </main>
 
 <script>
-// ===================== SET THIS ONE VALUE =====================
-const ACCESS_KEY = "PASTE_YOUR_WEB3FORMS_ACCESS_KEY_HERE";
-// ==============================================================
+// ===================== SET THESE TWO VALUES =====================
+const SHEET_URL = "PASTE_YOUR_APPS_SCRIPT_EXEC_URL_HERE";   // ends in /exec
+const TOKEN     = "CHANGE_ME_TO_A_RANDOM_STRING";            // must match TOKEN in the Apps Script
+// ================================================================
 
-const ENDPOINT = "https://api.web3forms.com/submit";
-const MIN_WHY = 10, MIN_RR = 1.5;
+const MIN_WHY = 10, MIN_RR = 1.5, MIN_CONF = 3;
 const $ = id => document.getElementById(id);
 const val = name => (document.querySelector('input[name="' + name + '"]:checked') || {}).value || "";
 const num = id => { const s = $(id).value.trim(); return s === "" ? NaN : parseFloat(s); };
 const dec = id => { const s = $(id).value.trim(), i = s.indexOf("."); return i < 0 ? 0 : s.length - i - 1; };
 const show = (el, text) => { if (text) { el.textContent = text; el.hidden = false; } else { el.hidden = true; } };
+const validUrl = s => /^https?:\/\/\S+\.\S+/i.test(s);
 let sending = false, cur = { risk: NaN, reward: NaN, rr: NaN, d: 2 };
 
 function evaluate() {
@@ -182,6 +211,9 @@ function evaluate() {
   if (isNaN(s)) need.push("stop loss");
   if (isNaN(t)) need.push("take profit");
   if (msgs.length) need.push("stop and target on the correct side");
+  ["c1", "c2", "c3"].forEach((id, i) => { if ($(id).value.trim().length < MIN_CONF) need.push("confluence " + (i + 1)); });
+  if (!val("tier")) need.push("tier");
+  if (!validUrl($("shot").value.trim())) need.push("screenshot link (https://...)");
   if (whyLen < MIN_WHY) need.push("why (" + (MIN_WHY - whyLen) + " more characters)");
   if (!val("news")) need.push("news answer");
   if (!val("macros")) need.push("DXY and macros answer"); else if (val("macros") !== "Yes") need.push("check DXY and macros, then answer Yes");
@@ -201,24 +233,25 @@ function result(ok, text) {
 
 function payload() {
   const pair = $("pair").value === "Other" ? $("other").value.trim().toUpperCase() : $("pair").value;
-  const dir = val("dir"), e = $("entry").value.trim(), s = $("sl").value.trim(), t = $("tp").value.trim();
   return {
-    access_key: ACCESS_KEY,
-    subject: "Trade receipt: " + pair + " " + dir + " @ " + e,
-    from_name: "Trade Checklist",
-    "Time": new Date().toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "long" }),
-    "Pair": pair,
-    "Direction": dir,
-    "Entry": e,
-    "Stop loss": s,
-    "Take profit": t,
-    "Risk": cur.risk.toFixed(cur.d),
-    "Reward": cur.reward.toFixed(cur.d),
-    "R:R": "1:" + cur.rr.toFixed(2),
-    "News tomorrow": val("news"),
-    "Checked DXY and macros": val("macros"),
-    "3rd or higher trade this week": val("third"),
-    "Why I entered": $("why").value.trim()
+    token: TOKEN,
+    pair: pair,
+    direction: val("dir"),
+    entry: $("entry").value.trim(),
+    sl: $("sl").value.trim(),
+    tp: $("tp").value.trim(),
+    risk: cur.risk.toFixed(cur.d),
+    reward: cur.reward.toFixed(cur.d),
+    rr: "1:" + cur.rr.toFixed(2),
+    screenshot: $("shot").value.trim(),
+    conf1: $("c1").value.trim(),
+    conf2: $("c2").value.trim(),
+    conf3: $("c3").value.trim(),
+    tier: val("tier"),
+    notes: $("why").value.trim(),
+    newsTomorrow: val("news"),
+    dxyChecked: val("macros"),
+    thirdTrade: val("third")
   };
 }
 
@@ -227,31 +260,31 @@ $("f").addEventListener("submit", async ev => {
   evaluate();
   if (sending || $("send").disabled) return;
   if ($("botcheck").checked) return;                       // honeypot filled: a bot, do nothing
-  if (!ACCESS_KEY || ACCESS_KEY.indexOf("PASTE_") === 0) {
-    result(false, "NOT SENT: the Web3Forms access key is not set. Paste it at the top of the script in checklist.html.");
+  if (!SHEET_URL || SHEET_URL.indexOf("PASTE_") === 0) {
+    result(false, "NOT SENT: the Google Sheet URL is not set. Paste your Apps Script /exec URL at the top of the script in checklist.html.");
     return;
   }
   sending = true;
-  $("send").disabled = true; $("send").textContent = "Sending..."; $("need").textContent = "Sending your receipt...";
+  $("send").disabled = true; $("send").textContent = "Sending..."; $("need").textContent = "Logging your trade...";
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 20000);
   try {
-    const res = await fetch(ENDPOINT, {
+    // No custom headers: body string defaults to text/plain, which avoids a CORS preflight on Apps Script.
+    const res = await fetch(SHEET_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify(payload()),
       signal: ctl.signal
     });
     let data = null; try { data = await res.json(); } catch (_) {}
-    if (!res.ok || !data || data.success !== true) {
-      throw new Error((data && data.message) || ("The email service replied with HTTP " + res.status + "."));
+    if (!res.ok || !data || data.ok !== true) {
+      throw new Error((data && data.error) || ("The sheet replied with HTTP " + res.status + "."));
     }
     $("f").reset();
-    result(true, "Receipt sent. Check your inbox. The form has been cleared.");
+    result(true, "Logged to your journal and receipt sent. The form has been cleared.");
   } catch (err) {
-    const m = err.name === "AbortError" ? "Timed out after 20 seconds, so it is not confirmed as sent."
-            : err instanceof TypeError ? "No connection to the email service."
+    const m = err.name === "AbortError" ? "Timed out after 20 seconds, so it is not confirmed as logged. Check your sheet before resending."
+            : err instanceof TypeError ? "Could not reach the sheet. Check your sheet before resending in case it went through."
             : err.message;
-    result(false, "NOT SENT: " + m + " Your answers are still here. Try again.");
+    result(false, "NOT SENT: " + m + " Your answers are still here.");
   } finally {
     clearTimeout(timer);
     sending = false;
